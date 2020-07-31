@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "Solution Template Demo";
+}
+<div id="pagebody">
+    <div id="header">
+        <p style="float: left; font-size:3rem; margin:auto; align-items:stretch">
+            <strong>@ViewData["Title"]</strong>
+        </p>
+    </div>
+    <div id="main_contents">
+        <div id="EventSection">
+            <div id="DeviceEventHeader">
+                <p style="font-size:1.2rem; align-items:stretch">
+                    <strong>Device Telemetry and Events</strong>
+                </p>
+                <p style="float: left;align-items: stretch">
+                    <button class="btn btn-primary btn-xs" id="clear-events">
+                        <span class="glyphicon glyphicon-trash" style="height:1.5rem"></span>
+                    </button>
+                </p>
+            </div>
+            <div id="DeviceEventsTable">
+                <table id="grid-events" class="table table-striped">
+                    <thead>
+                        <th>&nbsp;</th>
+                        <th>Event Time (UTC)</th>
+                        <th>Device ID</th>
+                        <th>Model ID</th>
+                        <th>Event Source</th>
+                        <th>Event Type</th>
+                    </thead>
+                    <tbody id="grid-event-details"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script id="event-template" type="text/x-handlebars-template">
+        <tr data-toggle="collapse" data-target="#event-{{eventId}}" class="accordian-toggle">
+            <td>
+                <button class="btn btn-primary btn-xs">
+                    <span class="glyphicon glyphicon-eye-open"></span>
+                </button>
+            </td>
+            <td>{{eventTime}}</td>
+            <td>{{eventDeviceId}}</td>
+            <td>{{eventModelId}}</td>
+            <td>{{eventSource}}</td>
+            <td>{{eventType}}</td>
+        </tr>
+        <tr class="hiddenRow collapse" id="event-{{eventId}}">
+            <td colspan="12">
+                <div class="accordian-body">
+                    <pre><code class="nohighlight">{{eventData}}</code></pre>
+                </div>
+            </td>
+        </tr>
+    </script>
+
+    @section scripts {
+        @*<script src="~/lib/signalr.min.js" type="text/javascript"></script>*@
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.js"></script>
+
+        <script type="text/javascript">
+
+                var hubConnection;
+
+                var clear = function () {
+                    $("#grid-events").find("tr:gt(0)").remove();
+                    $("#grid-events").hide();
+                }
+
+                var addEvent = function (id, type, deviceId, modelId, source, time, data) {
+
+                    var dataObj = JSON.parse(data);
+                    var context = {
+                        eventTime: time,
+                        eventDeviceId: deviceId,
+                        eventModelId: modelId,
+                        eventType: type,
+                        eventSource: source,
+                        eventId: id,
+                        eventData: JSON.stringify(dataObj, undefined, 2)
+                    };
+                    var source = document.getElementById('event-template').innerHTML;
+                    var template = Handlebars.compile(source);
+                    var html = template(context);
+
+                    $("#grid-events").show();
+                    $('#grid-event-details').prepend(html);
+                }
+
+                var initialize = function () {
+                    //$("#grid-events").hide();
+                    var clearEvents = document.getElementById('clear-events');
+                    clearEvents.addEventListener('click', function () {
+                        clear();
+                    });
+
+                    hubConnection = new signalR.HubConnectionBuilder()
+                        .withUrl("TelemetryHub")
+                        .configureLogging(signalR.LogLevel.Information)
+                        .build();
+
+                    hubConnection.start().catch(err => console.error(err.toString()));
+
+                    console.log("Connected");
+
+                    hubConnection.on('DeviceTelemetry', function (payload) {
+                        var jsonData = JSON.parse(payload);
+                        addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    });
+
+                    hubConnection.on('DeviceTwinChange', function (payload) {
+                        var jsonData = JSON.parse(payload)
+                        addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    });
+
+                    hubConnection.on('DigitalTwinChange', function (payload) {
+                        var jsonData = JSON.parse(payload)
+                        addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    });
+
+                    hubConnection.on('DeviceLifecycle', function (payload) {
+                        var jsonData = JSON.parse(payload)
+                        addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    });
+
+                    hubConnection.on('EventGrid', function (payload) {
+                        var jsonData = JSON.parse(payload)
+                        addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    });
+
+                };
+
+                $(document).ready(function () {
+                    initialize();
+                });
+
+        </script>
+
+    }
+
+    </div>
