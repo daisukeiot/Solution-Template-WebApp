@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Portal.Helper;
 using Portal.Hubs;
 using Portal.Models;
 
@@ -26,8 +27,10 @@ namespace Portal
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
-            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            //services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            services.Configure<AppSettings>(Configuration.GetSection("Azure"));
             services.AddSignalR(options => options.EnableDetailedErrors = true).AddAzureSignalR(Configuration.GetSection("Azure").GetSection("SignalR").GetValue<string>("ConnectionString"));
+            services.AddSingleton<IIoTHubHelper, IoTHubHelper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -4,7 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Azure.Devices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Portal.Helper;
 using Portal.Models;
 
 namespace Portal.Controllers
@@ -12,15 +16,24 @@ namespace Portal.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly AppSettings _appSettings;
+        private readonly IIoTHubHelper _helper;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IOptions<AppSettings> optionsAccessor, ILogger<HomeController> logger, IIoTHubHelper helper)
         {
             _logger = logger;
+            _appSettings = optionsAccessor.Value;
+            _helper = helper;
+            _logger.LogInformation("HomeController");
+            ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            HomeViewModel homeView = new HomeViewModel();
+            homeView.deviceList = await _helper.GetDevices();
+            ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
+            return View(homeView);
         }
 
         public IActionResult Privacy()
