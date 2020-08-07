@@ -109,17 +109,17 @@ namespace Portal.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ConnectDevice(string connectionString)
+        public async Task<ActionResult> ConnectDevice(string connectionString, string modelId)
         {
-            Twin twin = await _helper.ConnectDevice(connectionString);
+            Twin twin = await _helper.ConnectDevice(connectionString, modelId);
             return Json(twin.ToString());
         }
 
         [HttpPost]
-        public async Task<ActionResult> SendTelemetry(string connectionString)
+        public async Task<ActionResult> SendTelemetry(string connectionString, string modelId)
         {
             
-            Twin twin = await _helper.SendTelemetry(connectionString);
+            Twin twin = await _helper.SendTelemetry(connectionString, modelId);
             return Json(twin.ToString());
         }
 

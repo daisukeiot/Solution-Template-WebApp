@@ -108,12 +108,11 @@
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-left:5px">
-                                        <a href="https://azure-samples.github.io/raspberry-pi-web-simulator/" target="_blank">Raspberry Pi Simulator</a>
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="column">
-                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
@@ -182,7 +181,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;">
-                                        &nbsp;
+                                        <button type="button" id="btnDeviceTwin"><i class="far fa-file-code" style="width:1.5em"></i>Device Twin</button>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -225,12 +224,12 @@
                                 </div>
                                 <div class="row">
                                     <div class="column">
-                                        <button type="button" id="btnDeviceTwin"><i class="far fa-file-code" style="width:1.5em"></i>Device Twin</button>
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;">
-                                        &nbsp;
+                                        <a href="https://azure-samples.github.io/raspberry-pi-web-simulator/" target="_blank">Raspberry Pi Simulator</a>
                                     </div>
                                 </div>
                             </div>
@@ -333,6 +332,9 @@
             if (targetDeviceId.length > 0) {
                 console.log("Selected " + targetDeviceId);
                 getDeviceInfo(targetDeviceId);
+            } else {
+                enableDisableButtons(true);
+                clearDeviceInfo();
             }
         });
 
@@ -366,9 +368,9 @@
         //
         $('#btnAddDevice').click(function () {
             var newDevice = $('#newDeviceId').val();
-            console.log("Add Device " + newDevice);
 
             if (newDevice.length > 0) {
+                console.log("Add Device " + newDevice);
                 $.ajax({
                     type: "POST",
                     url: '@Url.Action("AddDevice", "IoTHub")',
@@ -392,8 +394,10 @@
         //
         $('#btnDeleteDevice').click(function () {
             var targetDeviceId = $("#DeviceList option:selected").text();
+
             if (targetDeviceId.length > 0) {
-                console.log("Selected " + targetDeviceId);
+
+                console.log("Deleting " + targetDeviceId);
 
                 $.ajax({
                     type: "DELETE",
@@ -404,7 +408,6 @@
                         $("#DeviceList option:selected").remove();
                         enableDisableButtons(true);
                         clearDeviceInfo();
-
                     },
                     error: function (req, status, error) {
                         alert("Error " + status);
@@ -418,13 +421,14 @@
         //
         $('#btnConnect').click(function () {
             var targetDeviceId = $("#DeviceList option:selected").text();
-            console.log("Connect Device " + targetDeviceId);
+            var modelId = $("#tdModelId").text();
 
             if (targetDeviceId.length > 0 && connectionString.length > 0) {
+                console.log("Connect Device " + targetDeviceId + " Model : " + modelId);
                 $.ajax({
                 type: "POST",
                     url: '@Url.Action("ConnectDevice", "IoTHub")',
-                    data: { connectionString: connectionString},
+                    data: { connectionString: connectionString, modelId: modelId},
                     success: function (response) {
                         //alert(response)
                         getDeviceInfo(targetDeviceId);
@@ -438,13 +442,14 @@
 
         $('#btnTelemetry').click(function () {
             var targetDeviceId = $("#DeviceList option:selected").text();
-            console.log("Send Telemetry Device " + targetDeviceId);
+            var modelId = $("#tdModelId").text();
 
             if (targetDeviceId.length > 0) {
+                console.log("Sending Telemetry from " + targetDeviceId + " Model : " + modelId);
                 $.ajax({
                 type: "POST",
                     url: '@Url.Action("SendTelemetry", "IoTHub")',
-                    data: { connectionString: targetDeviceId},
+                    data: { connectionString: connectionString, modelId: modelId},
                     success: function (response) {
                         //alert(response)
                         getDeviceInfo(targetDeviceId);
@@ -477,7 +482,6 @@
 
         var getDeviceInfo = function (deviceId) {
 
-            console.log("getDeviceInfo");
             $.ajax({
                 type: "GET",
                 url: '@Url.Action("GetDevice", "IoTHub")',
@@ -535,7 +539,7 @@
             document.getElementById("btnDeviceTwin").disabled = disableButton;
         }
 
-        var clearEvents = function () {
+        var clearEventData = function () {
             $("#grid-events").find("tr:gt(0)").remove();
             $("#grid-events").hide();
         }
@@ -563,8 +567,8 @@
         var initialize = function () {
             //$("#grid-events").hide();
             var clearEvents = document.getElementById('clear-events');
-            clearEvents.addEventListener('click', function () {
-                clearEvents();
+                clearEvents.addEventListener('click', function () {
+                    clearEventData();
             });
 
             hubConnection = new signalR.HubConnectionBuilder()
@@ -574,7 +578,7 @@
 
             hubConnection.start().catch(err => console.error(err.toString()));
 
-            console.log("Connected");
+            console.log("Connected to SignalR");
 
             hubConnection.on('DeviceTelemetry', function (payload) {
                 var jsonData = JSON.parse(payload);

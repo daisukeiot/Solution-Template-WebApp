@@ -20,14 +20,14 @@ namespace Portal.Helper
 {
     public interface IIoTHubHelper
     {
-        Task<Twin> SetModelId(string deviceId, string modelId);
+        Task<Twin> SetModelId(string connectionString, string modelId);
         Task<bool> AddDevice(string deviceId);
         Task<bool> DeleteDevice(string deviceId);
         Task<Device> GetDevice(string deviceId);
         Task<Twin> GetTwin(string deviceId);
         Task<IEnumerable<SelectListItem>> GetDevices();
-        Task<Twin> ConnectDevice(string cs);
-        Task<Twin> SendTelemetry(string cs);
+        Task<Twin> ConnectDevice(string connectionString, string modelId);
+        Task<Twin> SendTelemetry(string connectionString, string modelId);
         string GetIoTHubName(string connectionString);
     }
     public class IoTHubHelper : IIoTHubHelper
@@ -172,17 +172,25 @@ namespace Portal.Helper
             // add empty one
             deviceList.Add(new SelectListItem { Value = "", Text = "" });
 
-            IQuery query = _registryManager.CreateQuery("select * from devices");
-
-            while (query.HasMoreResults)
+            try
             {
-                var twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
-                foreach (var twin in twins)
+                IQuery query = _registryManager.CreateQuery("select * from devices");
+
+                while (query.HasMoreResults)
                 {
-                    deviceList.Add(new SelectListItem { Value = twin.DeviceId, Text = twin.DeviceId });
-                    _logger.LogInformation(twin.DeviceId);
+                    var twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
+                    foreach (var twin in twins)
+                    {
+                        deviceList.Add(new SelectListItem { Value = twin.DeviceId, Text = twin.DeviceId });
+                        _logger.LogInformation(twin.DeviceId);
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                _logger.LogError($"CreateDevice: {e.Message}");
+            }
+
             return deviceList;
         }
 
@@ -223,43 +231,47 @@ namespace Portal.Helper
         /**********************************************************************************
          * Connect Web Client Simulator to IoT Hub
          *********************************************************************************/
-        public async Task<Twin> ConnectDevice(string cs)
+        public async Task<Twin> ConnectDevice(string connectionString, string modelId)
         {
             Twin twin = null;
-            const string modelId = "dtmi:com:example:Thermostat;1";
 
-            _logger.LogInformation($"{_isConnected}");
-
-            var options = new ClientOptions
+            try
             {
-                ModelId = modelId,
-            };
-
-            if (_deviceClient == null)
-            {
-                _deviceClient = DeviceClient.CreateFromConnectionString(cs, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
-
-                _deviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangedHandler);
-
-                await _deviceClient.OpenAsync();
-
-                while (_isConnected == false)
+                if (_deviceClient == null)
                 {
-                    await Task.Delay(10000);
+                    var options = new ClientOptions
+                    {
+                        ModelId = modelId,
+                    };
+
+                    _deviceClient = DeviceClient.CreateFromConnectionString(connectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
+
+                    _deviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangedHandler);
+
+                    await _deviceClient.OpenAsync();
+
+                    while (_isConnected == false)
+                    {
+                        await Task.Delay(10000);
+                    }
+
+                    twin = await _deviceClient.GetTwinAsync();
+
                 }
+                else
+                {
+                    twin = await _deviceClient.GetTwinAsync();
 
-                 twin = await _deviceClient.GetTwinAsync();
+                    await _deviceClient.CloseAsync();
 
-            } 
-            else
+                    _deviceClient.Dispose();
+
+                    _deviceClient = null;
+                }
+            }
+            catch (Exception e)
             {
-                twin = await _deviceClient.GetTwinAsync();
-
-                await _deviceClient.CloseAsync();
-
-                _deviceClient.Dispose();
-
-                _deviceClient = null;
+                _logger.LogError($"ConnectDevice: {e.Message}");
             }
 
             return twin;
@@ -268,13 +280,13 @@ namespace Portal.Helper
         /**********************************************************************************
          * Sends a telemetry from Web Client simulator
          *********************************************************************************/
-        public async Task<Twin> SendTelemetry(string cs)
+        public async Task<Twin> SendTelemetry(string connectionString, string modelId)
         {
             Twin twin;
 
             if (_deviceClient == null)
             {
-                twin = await ConnectDevice(cs);
+                twin = await ConnectDevice(connectionString, modelId);
             } else
             {
                 twin = await _deviceClient.GetTwinAsync();
