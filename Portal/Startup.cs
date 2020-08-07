@@ -51,6 +51,8 @@ namespace Portal
 
             app.UseRouting();
 
+            app.UseCors();
+
             app.UseAuthorization();
 
             app.UseAzureSignalR(routes =>
