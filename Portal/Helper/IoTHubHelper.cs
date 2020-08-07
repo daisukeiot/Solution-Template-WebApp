@@ -25,6 +25,7 @@ namespace Portal.Helper
         Task<Twin> GetTwin(string deviceId);
         Task<IEnumerable<SelectListItem>> GetDevices();
         Task<Twin> ConnectDevice(string cs);
+        Task<Twin> SendTelemetry(string cs);
         string GetIoTHubName(string connectionString);
     }
     public class IoTHubHelper : IIoTHubHelper
@@ -32,12 +33,16 @@ namespace Portal.Helper
         private readonly RegistryManager _registryManager;
         private readonly ILogger<IoTHubHelper> _logger;
         private readonly AppSettings _appSettings;
+        private DeviceClient _deviceClient;
+        private bool _isConnected;
 
         public IoTHubHelper(IOptions<AppSettings> config, ILogger<IoTHubHelper> logger)
         {
             _logger = logger;
             _appSettings = config.Value;
             _registryManager = RegistryManager.CreateFromConnectionString(_appSettings.IoTHub.ConnectionString);
+            _deviceClient = null;
+            _isConnected = false;
         }
 
         public async Task<Device> GetDevice(string deviceId)
@@ -106,7 +111,7 @@ namespace Portal.Helper
                 foreach (var twin in twins)
                 {
                     deviceList.Add(new SelectListItem { Value = twin.DeviceId, Text = twin.DeviceId });
-                    Console.WriteLine(twin.DeviceId);
+                    _logger.LogInformation(twin.DeviceId);
                 }
             }
             return deviceList;
@@ -117,36 +122,89 @@ namespace Portal.Helper
             return connectionString.Split(';')[0].Split('=')[1];
         }
 
+        private async void ConnectionStatusChangedHandler(
+                    ConnectionStatus status,
+                    ConnectionStatusChangeReason reason)
+        {
+            _logger.LogInformation(
+                "Client connection state changed. Status: {status}, Reason: {reason}",
+                status,
+                reason);
+
+            if (status == ConnectionStatus.Connected)
+            {
+                _isConnected = true;
+            } else
+            {
+                _isConnected = false;
+            }
+
+            //if (status == ConnectionStatus.Disabled && !IsConnInProgress)
+            //{
+            //    await ConnectToHubAsync(_cancellationToken);
+            //}
+        }
+
         public async Task<Twin> ConnectDevice(string cs)
         {
+            Twin twin = null;
             const string modelId = "dtmi:com:example:Thermostat;1";
+
+            _logger.LogInformation($"{_isConnected}");
 
             var options = new ClientOptions
             {
                 ModelId = modelId,
             };
 
-            var deviceClient = DeviceClient.CreateFromConnectionString(cs, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
-
-            deviceClient.SetConnectionStatusChangesHandler((status, reason) =>
+            if (_deviceClient == null)
             {
-                _logger.LogDebug($"Connection status change registered - status={status}, reason={reason}.");
-            });
+                _deviceClient = DeviceClient.CreateFromConnectionString(cs, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
 
-            var twin = await deviceClient.GetTwinAsync();
+                _deviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangedHandler);
+
+                await _deviceClient.OpenAsync();
+
+                while (_isConnected == false)
+                {
+                    await Task.Delay(10000);
+                }
+
+                 twin = await _deviceClient.GetTwinAsync();
+
+            } 
+            else
+            {
+                twin = await _deviceClient.GetTwinAsync();
+
+                await _deviceClient.CloseAsync();
+
+                _deviceClient.Dispose();
+
+                _deviceClient = null;
+            }
+
+            return twin;
+        }
+
+        public async Task<Twin> SendTelemetry(string cs)
+        {
+            Twin twin;
+
+            if (_deviceClient == null)
+            {
+                twin = await ConnectDevice(cs);
+            } else
+            {
+                twin = await _deviceClient.GetTwinAsync();
+            }
 
             var message = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes("{\"Web Client\":\"Connected\"}"));
             message.ContentType = "application/json";
             message.ContentEncoding = "utf-8";
-            await deviceClient.SendEventAsync(message);
+            await _deviceClient.SendEventAsync(message).ConfigureAwait(false);
 
-            await Task.Delay(3000);
-
-            await deviceClient.CloseAsync();
-
-            deviceClient.Dispose();
             return twin;
-
         }
     }
 }

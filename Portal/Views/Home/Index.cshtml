@@ -42,6 +42,21 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="ModalDeviceTwin" role="dialog" style="">
+            <div class="modal-dialog err-pop" style="width:50vw;margin:auto;background-color: rgb(242, 242,242);">
+                <div class="modal-content" id="DeviceTwinModal">
+                    <div class="header" style="text-align: center; margin: auto;align-items: stretch;display: flow-root">
+                        <strong>Device Twin</strong>
+                    </div>
+                    <div class="modal-body" style="text-align:left;">
+                        <div class="accordian-body">
+                            <pre><code class="nohighlight" id="DeviceTwinContent"></code></pre>
+                        </div>
+                        <button type="button" id="DivClose" style="width:45%;padding:3.5px;" data-dismiss="modal"><i class="fas fa-times"></i>Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div id="main_contents">
             <fieldset>
                 <legend><strong>Device Administration</strong></legend>
@@ -57,12 +72,12 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-left:5px">
                                         @Html.DropDownListFor(model => Model.deviceId, new SelectList(Model.deviceList, "Value", "Text"), new { @id = "DeviceList" })
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-left:5px">
                                         <a href="https://azure-samples.github.io/raspberry-pi-web-simulator/" target="_blank">Raspberry Pi Simulator</a>
                                     </div>
                                 </div>
@@ -84,74 +99,107 @@
                             <legend class="inner">Device Information</legend>
                             <div class="container">
                                 <div class="row">
-                                    <div class="column" style="padding-right:0.5em;">
+                                    <div class="column" style="padding-right:0.5em;padding-left:5px">
                                         Connection State
                                     </div>
                                     <div class="column" id="tdConnectionStatus" style="width:28em;">
-                                        
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-right:0.5em;padding-left:5px">
                                         Status
                                     </div>
                                     <div class="column" id="tdState">
-                                        
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-right:0.5em;padding-left:5px">
                                         IoT PnP Model ID
                                     </div>
                                     <div class="column" id="tdModelId">
-                                        
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-right:0.5em;padding-left:5px">
                                         Primary Key
                                     </div>
                                     <div class="column" id="tdPrimaryKey">
-                                        
+                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-right:0.5em;padding-left:5px">
                                         Secondary Key
                                     </div>
                                     <div class="column" id="tdSecondaryKey">
-                                        
+                                        &nbsp;
                                     </div>
                                 </div>
                             </div>
                         </fieldset>
                     </div>
                     <div class="column" style="padding-left:5px;">
-                        <fieldset>
+                        <fieldset style="height:100%;">
                             <legend class="inner">Device Operation</legend>
                             <div class="container">
                                 <div class="row">
-                                    <div class="column">
-                                        <button type="button" id="btnConnectionString"><i class="fas fa-info-circle" style="width:1.5em"></i>Connection String</button>
+                                    <div class="column" style="padding-right:0.5em;">
+                                        <button type="button" id="btnConnectionString"><i class="fas fa-info-circle" style="width:1.5em"></i>View Connection String</button>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="column">
-                                        <button type="button" id="btnConnect"><i class="fas fa-handshake" style="width:1.5em"></i>Connect to IoT Hub</button>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="column">
-                                        <button type="button" id="btnModelDefinition"><i class="far fa-file-code" style="width:1.5em"></i>Model Definition</button>
-                                </div>
-                                </div>
-                                <div class="row">
-                                    <div class="column">
+                                    <div class="column" style="padding-right:0.5em;">
                                         &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        &nbsp;
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        &nbsp;
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        &nbsp;
+                                    </div>
+                                </div>
+
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="column" style="padding-left:5px;">
+                        <fieldset style="height:100%;">
+                            <legend class="inner">Web Client (Simulator)</legend>
+                            <div class="container">
+                                <div class="row">
                                     <div class="column">
+                                        <button type="button" id="btnConnect"><i class="fa fa-link" style="width: 1.5em"></i>Connect Web Simulator</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column">
+                                        <button type="button" id="btnTelemetry"><i class="far fa-envelope" style="width:1.5em"></i>Send a message</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column">
+                                        <button type="button" id="btnDeviceTwin"><i class="far fa-file-code" style="width:1.5em"></i>View Device Twin</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        &nbsp;
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
                                         &nbsp;
                                     </div>
                                 </div>
@@ -160,8 +208,6 @@
                     </div>
                 </div>
             </fieldset>
-
-
             <fieldset>
                 <legend><strong>Device Telemetry and Events</strong></legend>
                 <div class="container">
@@ -209,6 +255,7 @@
 
 <script>
 
+
     $(document).ready(function () {
         //document.getElementById('DeviceList').selectedIndex = -1;
 
@@ -218,6 +265,27 @@
 
         $("#btnConnectionString").click(function () {
             $('#ModalConnectionString').modal('show');
+        })
+
+        $("#btnDeviceTwin").click(function () {
+
+            var selectedDevice = $("#DeviceList option:selected").text();
+            console.log("Get Twin " + connectionString);
+
+            if (connectionString.length > 0) {
+                $.ajax({
+                type: "GET",
+                    url: '@Url.Action("GetTwin", "IoTHub")',
+                    data: { deviceId: selectedDevice},
+                    success: function (response) {
+                        document.getElementById('DeviceTwinContent').innerHTML = response;
+                        $('#ModalDeviceTwin').modal('show');
+                    },
+                    error: function(req, status, error) {
+                        alert("Error " + status);
+                    }
+                });
+            };
         })
 
         $('#DeviceList').change(function () {
@@ -238,14 +306,33 @@
                     url: '@Url.Action("ConnectDevice", "IoTHub")',
                     data: { connectionString: connectionString},
                     success: function (response) {
-                        alert(response)
+                        //alert(response)
                         getDeviceInfo(selectedDevice);
                     },
                     error: function(req, status, error) {
                         alert("Error " + status);
                     }
                 });
-                $('#ModalCreateDevice').modal('hide');
+            };
+        });
+
+        $('#btnTelemetry').click(function () {
+            var selectedDevice = $("#DeviceList option:selected").text();
+            console.log("Connect Device " + connectionString);
+
+            if (connectionString.length > 0) {
+                $.ajax({
+                type: "POST",
+                    url: '@Url.Action("SendTelemetry", "IoTHub")',
+                    data: { connectionString: connectionString},
+                    success: function (response) {
+                        //alert(response)
+                        getDeviceInfo(selectedDevice);
+                    },
+                    error: function(req, status, error) {
+                        alert("Error " + status);
+                    }
+                });
             };
         });
 
@@ -311,6 +398,8 @@
 
         var connectionString = "";
 
+        var deviceTwinString = "";
+
         var getDeviceInfo = function (deviceId) {
 
             console.log("getDeviceInfo");
@@ -320,12 +409,18 @@
                 data: { deviceId: deviceId },
                 success: function (response) {
                     document.getElementById('tdConnectionStatus').innerHTML = response.connectionState;
+                    if (response.connectionState == "Connected") {
+                        btnConnect.innerHTML = '<i class="fa fa-unlink" style="width: 1.5em"></i>Disconnect Web Simulator'
+                    } else {
+                        btnConnect.innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect Web Simulator'
+                    }
                     document.getElementById('tdState').innerHTML = response.status;
                     document.getElementById('tdPrimaryKey').innerHTML = response.primaryKey;
                     document.getElementById('tdSecondaryKey').innerHTML = response.secondaryKey;
                     connectionString = "HostName=" + '@ViewData["IoTHubName"]' + ";DeviceId=" + response.deviceId + ";SharedAccessKey=" + response.primaryKey;
                     document.getElementById('tdConnectionString').innerHTML = connectionString;
                     document.getElementById('tdModelId').innerHTML = response.modelId;
+                    deviceTwinString = response;
                     return true;
                 },
                 error: function (req, status, error) {

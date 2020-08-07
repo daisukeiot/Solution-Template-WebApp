@@ -110,6 +110,23 @@ namespace Portal.Controllers
             return Json(twin.ToString());
         }
 
+        [HttpPost]
+        public async Task<ActionResult> SendTelemetry(string connectionString)
+        {
+            
+            Twin twin = await _helper.SendTelemetry(connectionString);
+            return Json(twin.ToString());
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> GetTwin(string deviceId)
+        {
+
+            Twin twin = await _helper.GetTwin(deviceId);
+            JObject twinJson = (JObject)JsonConvert.DeserializeObject(twin.ToJson());
+            return Json(twinJson.ToString());
+        }
+
         [HttpDelete]
         public async Task<bool> DeleteDevice(string deviceId)
         {
