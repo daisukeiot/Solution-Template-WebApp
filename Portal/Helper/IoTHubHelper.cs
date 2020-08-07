@@ -122,7 +122,7 @@ namespace Portal.Helper
             return connectionString.Split(';')[0].Split('=')[1];
         }
 
-        private async void ConnectionStatusChangedHandler(
+        private void ConnectionStatusChangedHandler(
                     ConnectionStatus status,
                     ConnectionStatusChangeReason reason)
         {
