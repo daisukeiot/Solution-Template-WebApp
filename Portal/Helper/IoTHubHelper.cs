@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Portal.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -19,6 +20,7 @@ namespace Portal.Helper
 {
     public interface IIoTHubHelper
     {
+        Task<Twin> SetModelId(string deviceId, string modelId);
         Task<bool> AddDevice(string deviceId);
         Task<bool> DeleteDevice(string deviceId);
         Task<Device> GetDevice(string deviceId);
@@ -47,15 +49,76 @@ namespace Portal.Helper
 
         public async Task<Device> GetDevice(string deviceId)
         {
-            return await _registryManager.GetDeviceAsync(deviceId);
+            Device device = null;
+            try
+            {
+                device = await _registryManager.GetDeviceAsync(deviceId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"GetTwin: {e.Message}");
+            }
+            return device;
         }
 
         public async Task<Twin> GetTwin(string deviceId)
         {
-            return await _registryManager.GetTwinAsync(deviceId);
+            Twin twin = null;
+
+            try
+            {
+                twin = await _registryManager.GetTwinAsync(deviceId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"GetTwin: {e.Message}");
+            }
+            return twin;
         }
 
-        //public async Task<bool> AddDevice(Guid deviceId, string jsonTags, string jsonDesired)
+        public async Task<Twin> SetModelId(string connectionString, string modelId)
+        {
+            Twin twin = null;
+            int retry = 10;
+
+            var options = new ClientOptions
+            {
+                ModelId = modelId,
+            };
+
+            if (_deviceClient == null)
+            {
+                _deviceClient = DeviceClient.CreateFromConnectionString(connectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
+
+                _deviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangedHandler);
+
+                await _deviceClient.OpenAsync();
+
+                while (_isConnected == false && retry > 0)
+                {
+                    await Task.Delay(1000);
+                    retry--;
+                }
+
+                twin = await _deviceClient.GetTwinAsync();
+            }
+            else
+            {
+                twin = await _deviceClient.GetTwinAsync();
+
+                await _deviceClient.CloseAsync();
+
+                _deviceClient.Dispose();
+
+                _deviceClient = null;
+            }
+
+            return twin;
+        }
+
+        /**********************************************************************************
+         * Add a new IoT Device to IoT Hub
+         *********************************************************************************/
         public async Task<bool> AddDevice(string deviceId)
         {
             try
@@ -83,6 +146,9 @@ namespace Portal.Helper
             return true;
         }
 
+        /**********************************************************************************
+         * Delete an IoT Device from IoT Hub
+         *********************************************************************************/
         public async Task<bool> DeleteDevice(string deviceId)
         {
             try
@@ -97,6 +163,9 @@ namespace Portal.Helper
             return true;
         }
 
+        /**********************************************************************************
+         * Get list of devices from IoT Hub
+         *********************************************************************************/
         public async Task<IEnumerable<SelectListItem>> GetDevices()
         {
             List<SelectListItem> deviceList = new List<SelectListItem>();
@@ -117,11 +186,17 @@ namespace Portal.Helper
             return deviceList;
         }
 
+        /**********************************************************************************
+         * Get a name of IoT Hub from Connection String
+         *********************************************************************************/
         public string GetIoTHubName(string connectionString)
         {
             return connectionString.Split(';')[0].Split('=')[1];
         }
 
+        /**********************************************************************************
+         * Connection Status Change Notification for Web Client simulator
+         *********************************************************************************/
         private void ConnectionStatusChangedHandler(
                     ConnectionStatus status,
                     ConnectionStatusChangeReason reason)
@@ -145,6 +220,9 @@ namespace Portal.Helper
             //}
         }
 
+        /**********************************************************************************
+         * Connect Web Client Simulator to IoT Hub
+         *********************************************************************************/
         public async Task<Twin> ConnectDevice(string cs)
         {
             Twin twin = null;
@@ -187,6 +265,9 @@ namespace Portal.Helper
             return twin;
         }
 
+        /**********************************************************************************
+         * Sends a telemetry from Web Client simulator
+         *********************************************************************************/
         public async Task<Twin> SendTelemetry(string cs)
         {
             Twin twin;

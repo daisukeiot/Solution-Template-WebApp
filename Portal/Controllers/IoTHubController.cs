@@ -94,13 +94,18 @@ namespace Portal.Controllers
             return Json(deviceData);
         }
 
-        // https://qiita.com/lusf/items/fdcfc0396514f64adc67
         // https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.devices.registrymanager?view=azure-dotnet
         [HttpPost]
         public async Task<bool> AddDevice(string deviceId)
         {
 
             return await _helper.AddDevice(deviceId);
+        }
+
+        [HttpPost]
+        public async Task<Twin> SetModelId(string connectionString, string modelId)
+        {
+            return await _helper.SetModelId(connectionString, modelId);
         }
 
         [HttpPost]
