@@ -119,9 +119,9 @@ button:focus {
 }
 
 td, table {
-    border: solid;
+/*    border: solid;
     border-width: 1px;
-    border-color:yellow;
+    border-color:yellow;*/
 }
 
 table {
