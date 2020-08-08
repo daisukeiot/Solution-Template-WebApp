@@ -12,7 +12,7 @@
             <div class="modal-dialog err-pop" style="width: 40vw;background-color: rgb(242, 242,242);">
                 <div class="modal-content" id="NewDeviceModal">
                     <div class="header" style="text-align: center;font-size: 120%; margin: auto;align-items: stretch;display: flow-root">
-                        <strong>Add a New Device</strong>
+                        <strong>Add Device</strong>
                     </div>
                     <div class="modal-body" style="text-align:center;">
                         @using (Html.BeginForm("AddDevice", "IoTHub", FormMethod.Post, new { @id = "NewDeviceForm" }))
@@ -27,7 +27,7 @@
                         }
                     </div>
                     <div class="modal-footer justify-content-between">
-                        <button type="button" id="btnAddDevice" style="width:45%;padding:3.5px;"><i class="fas fa-plus"></i>Add Device</button>
+                        <button type="button" id="btnAddDevice" style="width:45%;padding:3.5px;"><i class="fas fa-plus"></i>Add</button>
                         <button type="button" id="DivClose" style="width:45%;padding:3.5px;" data-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                     </div>
                 </div>
