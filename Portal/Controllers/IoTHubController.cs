@@ -36,11 +36,6 @@ namespace Portal.Controllers
             _appSettings = optionsAccessor.Value;
         }
 
-        //public IoTHubController(string connectionString)
-        //{
-        //    _registryManager = RegistryManager.CreateFromConnectionString(connectionString);
-        //}
-
         public IActionResult Index()
         {
             return View();
@@ -137,33 +132,5 @@ namespace Portal.Controllers
         {
             return await _helper.DeleteDevice(deviceId);
         }
-
-        //[HttpGet]
-        //public async Task<List<SelectListItem>> GetDeviceList()
-        //{
-        //    List<SelectListItem> devices = new List<SelectListItem>();
-
-        //    try
-        //    {
-        //        IQuery query = _registryManager.CreateQuery("select * from devices");
-
-        //        while (query.HasMoreResults)
-        //        {
-        //            var twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
-        //            foreach (var twin in twins)
-        //            {
-        //                devices.Add(new SelectListItem { Value = twin.DeviceId, Text = twin.DeviceId });
-        //                Console.WriteLine(twin.DeviceId);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //
-        //    }
-
-        //    return devices;
-
-        //}
     }
 }

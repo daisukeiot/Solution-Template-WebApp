@@ -83,10 +83,6 @@ select#DeviceList, input#newDeviceId, input#newModelId {
     margin:0;
 }
 
-form@NewDeviceForm {
-    margin-bottom:10px;
-}
-
 input#newDeviceId, input#newModelId {
     font-size: 1em;
     margin-bottom: 10px;
@@ -94,10 +90,6 @@ input#newDeviceId, input#newModelId {
 
 div#NewDeviceModal {
     color : black;
-}
-
-div.DeviceDetail {
-    margin: 0 0 0 10px;
 }
 
 button {
@@ -138,12 +130,6 @@ td, table {
 table {
 /*    border-color: green;*/
     border-spacing:2px;
-}
-
-table#deviceDetailTable {
-    font-weight: normal;
-    text-align: left;
-    text-indent: 10px;
 }
 
 i {

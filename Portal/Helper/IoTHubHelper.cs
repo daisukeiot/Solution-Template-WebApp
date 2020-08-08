@@ -89,9 +89,7 @@ namespace Portal.Helper
             if (_deviceClient == null)
             {
                 _deviceClient = DeviceClient.CreateFromConnectionString(connectionString, Microsoft.Azure.Devices.Client.TransportType.Mqtt, options);
-
                 _deviceClient.SetConnectionStatusChangesHandler(ConnectionStatusChangedHandler);
-
                 await _deviceClient.OpenAsync();
 
                 while (_isConnected == false && retry > 0)
@@ -105,11 +103,8 @@ namespace Portal.Helper
             else
             {
                 twin = await _deviceClient.GetTwinAsync();
-
                 await _deviceClient.CloseAsync();
-
                 _deviceClient.Dispose();
-
                 _deviceClient = null;
             }
 
@@ -121,9 +116,11 @@ namespace Portal.Helper
          *********************************************************************************/
         public async Task<bool> AddDevice(string deviceId)
         {
+            Device device = null;
+
             try
             {
-                Device device = await _registryManager.GetDeviceAsync(deviceId.ToString());
+                device = await _registryManager.GetDeviceAsync(deviceId.ToString());
                 if (device == null)
                 {
                     _logger.LogDebug($"Create new device '{deviceId}'");
@@ -134,10 +131,10 @@ namespace Portal.Helper
                     _logger.LogDebug($"The device '{deviceId}' already exist.");
                 }
             }
-            //catch (DeviceAlreadyExistsException)
-            //{
-            //    device = await _registryManager.GetDeviceAsync(deviceId);
-            //}
+            catch (DeviceAlreadyExistsException)
+            {
+                device = await _registryManager.GetDeviceAsync(deviceId);
+            }
             catch (Exception e)
             {
                 _logger.LogError($"CreateDevice: {e.Message}");
@@ -221,11 +218,6 @@ namespace Portal.Helper
             {
                 _isConnected = false;
             }
-
-            //if (status == ConnectionStatus.Disabled && !IsConnInProgress)
-            //{
-            //    await ConnectToHubAsync(_cancellationToken);
-            //}
         }
 
         /**********************************************************************************
