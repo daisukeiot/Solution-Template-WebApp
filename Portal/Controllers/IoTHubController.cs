@@ -36,11 +36,6 @@ namespace Portal.Controllers
             _appSettings = optionsAccessor.Value;
         }
 
-        //public IoTHubController(string connectionString)
-        //{
-        //    _registryManager = RegistryManager.CreateFromConnectionString(connectionString);
-        //}
-
         public IActionResult Index()
         {
             return View();
@@ -94,7 +89,6 @@ namespace Portal.Controllers
             return Json(deviceData);
         }
 
-        // https://qiita.com/lusf/items/fdcfc0396514f64adc67
         // https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.devices.registrymanager?view=azure-dotnet
         [HttpPost]
         public async Task<bool> AddDevice(string deviceId)
@@ -104,17 +98,23 @@ namespace Portal.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> ConnectDevice(string connectionString)
+        public async Task<Twin> SetModelId(string connectionString, string modelId)
         {
-            Twin twin = await _helper.ConnectDevice(connectionString);
+            return await _helper.SetModelId(connectionString, modelId);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> ConnectDevice(string connectionString, string modelId)
+        {
+            Twin twin = await _helper.ConnectDevice(connectionString, modelId);
             return Json(twin.ToString());
         }
 
         [HttpPost]
-        public async Task<ActionResult> SendTelemetry(string connectionString)
+        public async Task<ActionResult> SendTelemetry(string connectionString, string modelId)
         {
             
-            Twin twin = await _helper.SendTelemetry(connectionString);
+            Twin twin = await _helper.SendTelemetry(connectionString, modelId);
             return Json(twin.ToString());
         }
 
@@ -132,33 +132,5 @@ namespace Portal.Controllers
         {
             return await _helper.DeleteDevice(deviceId);
         }
-
-        //[HttpGet]
-        //public async Task<List<SelectListItem>> GetDeviceList()
-        //{
-        //    List<SelectListItem> devices = new List<SelectListItem>();
-
-        //    try
-        //    {
-        //        IQuery query = _registryManager.CreateQuery("select * from devices");
-
-        //        while (query.HasMoreResults)
-        //        {
-        //            var twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
-        //            foreach (var twin in twins)
-        //            {
-        //                devices.Add(new SelectListItem { Value = twin.DeviceId, Text = twin.DeviceId });
-        //                Console.WriteLine(twin.DeviceId);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //
-        //    }
-
-        //    return devices;
-
-        //}
     }
 }
