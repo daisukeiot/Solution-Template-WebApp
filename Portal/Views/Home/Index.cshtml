@@ -58,18 +58,6 @@
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="ModalConnectionString" role="dialog" style="">
-            <div class="modal-dialog err-pop" style="width:60vw;background-color: rgb(242, 242,242);">
-                <div class="modal-content" id="ConnectionStringModal">
-                    <div class="header" style="text-align: center; margin: auto;align-items: stretch;display: flow-root">
-                        <strong>Connection String</strong>
-                    </div>
-                    <div class="modal-body" style="text-align:center;font-size:0.6em;" id="tdConnectionString">
-                        &nbsp;
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="modal fade" id="ModalDeviceTwin" role="dialog" style="">
             <div class="modal-dialog err-pop" style="width:50vw;background-color: rgb(242, 242,242);">
                 <div class="modal-content" id="DeviceTwinModal">
@@ -153,17 +141,15 @@
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;padding-left:5px">
-                                        Primary Key
                                     </div>
-                                    <div class="column" id="tdPrimaryKey">
+                                    <div class="column" id="">
                                         &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;padding-left:5px">
-                                        Secondary Key
                                     </div>
-                                    <div class="column" id="tdSecondaryKey">
+                                    <div class="column" id="">
                                         &nbsp;
                                     </div>
                                 </div>
@@ -176,22 +162,22 @@
                             <div class="container">
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;">
-                                        <button type="button" id="btnConnectionStringPopup"><i class="fas fa-info-circle" style="width:1.5em"></i>View Connection String</button>
+                                        <button type="button" id="btnConnectionStringCopy"><i class="fas fa-info-circle" style="width:1.5em"></i>Copy Connection String</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        <button type="button" id="btnPrimaryKeyCopy"><i class="fas fa-info-circle" style="width:1.5em"></i>Copy Primary Key</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="column" style="padding-right:0.5em;">
+                                        <button type="button" id="btnSecondaryKeyCopy"><i class="fas fa-info-circle" style="width:1.5em"></i>Copy Secondary Key</button>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="column" style="padding-right:0.5em;">
                                         <button type="button" id="btnDeviceTwin"><i class="far fa-file-code" style="width:1.5em"></i>Device Twin</button>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="column" style="padding-right:0.5em;">
-                                        &nbsp;
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="column" style="padding-right:0.5em;">
-                                        &nbsp;
                                     </div>
                                 </div>
                                 <div class="row">
@@ -297,8 +283,18 @@
             $('#ModalCreateDevice').modal('show');
         })
 
-        $("#btnConnectionStringPopup").click(function () {
-            $('#ModalConnectionString').modal('show');
+        $("#btnConnectionStringCopy").click(function () {
+            navigator.clipboard.writeText(connectionString);
+        })
+
+        $("#btnPrimaryKeyCopy").click(function () {
+            console.log("Primary" + deviceKeyPrimary);
+            navigator.clipboard.writeText(deviceKeyPrimary);
+        })
+
+        $("#btnSecondaryKeyCopy").click(function () {
+            console.log("Secondary" + deviceKeySecondary);
+            navigator.clipboard.writeText(deviceKeySecondary);
         })
 
         //
@@ -477,6 +473,8 @@
         var hubConnection;
 
         var connectionString = "";
+        var deviceKeyPrimary = "";
+        var deviceKeySecondary = "";
 
         var deviceTwinString = "";
 
@@ -494,10 +492,9 @@
                         btnConnect.innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect'
                     }
                     document.getElementById('tdState').innerHTML = response.status;
-                    document.getElementById('tdPrimaryKey').innerHTML = response.primaryKey;
-                    document.getElementById('tdSecondaryKey').innerHTML = response.secondaryKey;
+                    deviceKeyPrimary = response.primaryKey;
+                    deviceKeySecondary = response.secondaryKey;
                     connectionString = "HostName=" + '@ViewData["IoTHubName"]' + ";DeviceId=" + response.deviceId + ";SharedAccessKey=" + response.primaryKey;
-                    document.getElementById('tdConnectionString').innerHTML = connectionString;
                     document.getElementById('tdModelId').innerHTML = response.modelId;
                     deviceTwinString = response;
                     enableDisableButtons(false);
@@ -527,11 +524,15 @@
             document.getElementById("btnDeleteDevice").disabled = disableButton;
 
             if (disableButton == false && connectionString.length > 0) {
-                document.getElementById("btnConnectionStringPopup").disabled = disableButton;
+                document.getElementById("btnConnectionStringCopy").disabled = disableButton;
+                document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
+                document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
                 document.getElementById("btnConnect").disabled = disableButton;
                 document.getElementById("btnTelemetry").disabled = disableButton;
             } else {
-                document.getElementById("btnConnectionStringPopup").disabled = disableButton;
+                document.getElementById("btnConnectionStringCopy").disabled = disableButton;
+                document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
+                document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
                 document.getElementById("btnConnect").disabled = disableButton;
                 document.getElementById("btnTelemetry").disabled = disableButton;
             }
