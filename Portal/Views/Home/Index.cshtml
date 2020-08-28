@@ -224,6 +224,9 @@
                 </div>
             </fieldset>
             <fieldset>
+                <div id="map-id"></div>
+            </fieldset>
+            <fieldset>
                 <legend><strong>Device Telemetry and Events</strong></legend>
                 <div class="container">
                     <div class="EventSection">
@@ -566,6 +569,18 @@
         }
 
         var initialize = function () {
+
+            var map = new atlas.Map('map-id', {
+                center: [-122.33, 47.6],
+                zoom: 12,
+                language: 'en-US',
+                authOptions: {
+                    authType: 'subscriptionKey',
+                    subscriptionKey: `@ViewData["mapKey"]`
+                }
+            });
+
+
             //$("#grid-events").hide();
             var clearEvents = document.getElementById('clear-events');
                 clearEvents.addEventListener('click', function () {

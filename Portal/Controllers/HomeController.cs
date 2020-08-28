@@ -25,7 +25,7 @@ namespace Portal.Controllers
             _appSettings = optionsAccessor.Value;
             _helper = helper;
             _logger.LogInformation("HomeController");
-            ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
+//            ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
         }
 
         public async Task<IActionResult> Index()
@@ -33,6 +33,7 @@ namespace Portal.Controllers
             HomeViewModel homeView = new HomeViewModel();
             homeView.deviceList = await _helper.GetDevices();
             ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
+            ViewData["mapKey"] = _appSettings.AzureMap.MapKey.ToString();
             return View(homeView);
         }
 

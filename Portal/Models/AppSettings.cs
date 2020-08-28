@@ -15,11 +15,18 @@ namespace Portal.Models
         public string ConnectionString { get; set; }
     }
 
+    public class AzureMap
+    {
+        public string MapKey { get; set; }
+    };
+
     public class AppSettings
     {
         public SignalrSetting SignalR { get; set; }
         public IotHubSetting IoTHub { get; set; }
+        public AzureMap AzureMap { get; set; }
     }
+
     //public class AzureSetting
     //{
     //    public SignalrSetting SignalR { get; set; }
