@@ -22,16 +22,29 @@ div#pagebody {
 Header
 ============================================================*/
 
-.header, div#main_contents {
+.header {
+    z-index: 2;
+    background: black;
+    /*position: fixed;*/
+    top: 0;
+    left: 0;
+    height: auto;
+    padding: 8px;
+    border-bottom: 1px solid #888;
+    width: 100%;
+    color: white;
+} 
+
+/*.header, div#main_contents {
     margin: auto;
-}
+}*/
 
 .header {
     text-align: center;
     color: white;
     background-color: rgb(0, 120, 212);
     display: flex;
-    height: auto; /*10vh*/
+    height: auto; 10vh
 
 }
 
@@ -39,7 +52,7 @@ div#main_contents {
     /*    background-color:red;*/
     color :rgb(80,80,80) ;
     margin: 0px 0px 0px 0px;
-    font-size: 0.9em;
+    font-size: 0.5em;
 }
 
 
@@ -143,6 +156,7 @@ i {
     font-size:90%;
     margin:0;
     padding:0px;
+    height:auto;
 }
 
 .column {
@@ -166,3 +180,17 @@ i {
     margin: 0;
     padding: 0px;
 }
+
+.loginLogout {
+    /*position: absolute;*/
+    top: 6px;
+    font-size: 13px;
+    right: 0;
+}
+
+.rightSide {
+    /*position: absolute;*/
+    top: 0;
+    right: 0;
+    margin-right: 40px;
+} 

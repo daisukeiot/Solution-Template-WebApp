@@ -20,11 +20,20 @@ namespace Portal.Models
         public string MapKey { get; set; }
     };
 
+    public class TimeSeriesInsights
+    {
+        public string clientId { get; set; }
+        public string tenantId { get; set; }
+        public string tsiUri { get; set; }
+
+    };
+
     public class AppSettings
     {
         public SignalrSetting SignalR { get; set; }
         public IotHubSetting IoTHub { get; set; }
         public AzureMap AzureMap { get; set; }
+        public TimeSeriesInsights TimeSeriesInsights { get; set; }
     }
 
     //public class AzureSetting

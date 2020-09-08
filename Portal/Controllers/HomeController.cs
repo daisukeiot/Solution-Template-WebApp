@@ -34,6 +34,9 @@ namespace Portal.Controllers
             homeView.deviceList = await _helper.GetDevices();
             ViewData["IoTHubName"] = _helper.GetIoTHubName(_appSettings.IoTHub.ConnectionString);
             ViewData["mapKey"] = _appSettings.AzureMap.MapKey.ToString();
+            ViewData["TsiClientId"] = _appSettings.TimeSeriesInsights.clientId.ToString();
+            ViewData["TsiTenantId"] = _appSettings.TimeSeriesInsights.tenantId.ToString();
+            ViewData["TsiUri"] = _appSettings.TimeSeriesInsights.tsiUri.ToString();
             return View(homeView);
         }
 
