@@ -1,17 +1,18 @@
-function initAuth(clientId, tenant, ){
+function initAuth(clientId, tenantId, ){
 
     if (clientId == "") {
         console.log("TSI Client ID is emptry");
         return;
     }
 
+    console.log("Cliend ID " + clientId);
+    console.log("Tenant ID " + tenantId);
+
     authContext = new AuthenticationContext({
         clientId: clientId,
         cacheLocation: 'localStorage',
-        tenant: tenant
+        tenant: tenantId
     });
-
-
 
     if (authContext.isCallback(window.location.hash)) {
 
@@ -26,11 +27,13 @@ function initAuth(clientId, tenant, ){
     } else {
         var user = authContext.getCachedUser();
         if (user) {
+            console.log("Signed In " + user.userName);
             document.getElementById('tsiLogin').style.display = "block";
             document.getElementById('btnTsiLogout').innerHTML = '<i class="fas fa-sign-out-alt"></i>Logout : ' + user.userName;
             document.getElementById('tsiUserInfo').style.display = "block";
                 
         } else {
+            console.log("Not Signed In");
             document.getElementById('btnTsiLogout').innerHTML = '<i class="fas fa-sign-in-alt"></i>Not signed in.';
         }
     }
