@@ -25,6 +25,7 @@ namespace Portal.Models
         public string clientId { get; set; }
         public string tenantId { get; set; }
         public string tsiUri { get; set; }
+        public string tsiSecret { get; set; }
 
     };
 

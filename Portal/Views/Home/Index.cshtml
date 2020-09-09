@@ -85,17 +85,13 @@
             <div class="column" style="width:50%;margin-right:1px;height:auto">
                 <fieldset style="height:100%;">
                     <legend><strong>Time Series Insights</strong></legend>
-                    <div id="tsiLogin" style="font-size:1.5em; display: none; text-align:center; position:relative;top:30%;z-index:1;">
-                        <div id="tsiLoginContext"></div>
-                        <button type="button" id="btnTsiLogin"><i class="fas fa-sign-in-alt"></i>Login</button>
-                        </br>
+                    <div id="tsiNoSP" style="font-size:1.5em; display: none; text-align:center; position:relative;top:30%;z-index:1;">
+                        <div id="tsiNoSpMsg"></div>
                         <a href="https://www.github.com/microsoft/project15-dev/" target="_blank" rel="noopener noreferrer">How to set up Time Series Insights</a>
                     </div>
-                    <div id="tsiUserInfo" style="display:none; height:2em;">
-                        <div id="tsiChart" style="position:relative;width: 100%;height:calc(30vh - 2em); margin: 0px;"></div>
-                        <div class="Logout">
-                            <button type="button" id="btnTsiLogout"><i class="fas fa-sign-out-alt"></i>Logout : </button>
-                        </div>
+                    <div id="tsiChart" style="display:none; height:2em;">
+                        <div id="tsiLineChart" style="position:relative;width: 100%;height:calc(30vh - 2em); margin: 0px;"></div>
+                        <button type="button" id="btnRefreshTsi"><i class="fas fa-sync"></i>Refresh</button>
                     </div>
                 </fieldset>
             </div>
@@ -310,7 +306,6 @@
 
     @section scripts
     {
-        @*<script src="~/lib/signalr.min.js" type="text/javascript"></script>*@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script>
@@ -318,490 +313,519 @@
 
         <script type="text/javascript">
 
-        var hubConnection;
+            var hubConnection;
 
-        var connectionString = "";
-        var deviceKeyPrimary = "";
-        var deviceKeySecondary = "";
-        var deviceTwinString = "";
+            var connectionString = "";
+            var deviceKeyPrimary = "";
+            var deviceKeySecondary = "";
+            var deviceTwinString = "";
 
-        var tsiClientId = '@ViewData["TsiClientId"]';
-        var tsiTenantId = '@ViewData["TsiTenantId"]';
-        var authContext;
-        var tsiClient
+            var tsiToken = "";
+            var tsiClient
+            var lineChart = null;
 
-        $("#btnTsiLogout").click(function () {
-            console.log("TSI Logout")
-            authContext.logOut();
-        })
+            $("#btnTsiLogout").click(function () {
+                console.log("TSI Logout")
+                authContext.logOut();
+            })
 
-        $("#btnTsiLogin").click(function () {
-            console.log("TSI Login")
-            authContext.login();
-        })
+            $("#btnTsiLogin").click(function () {
+                console.log("TSI Login")
+                authContext.login();
+            })
 
-        //
-        // Button click event handlers
-        //
-        $("#btnSetModelPopup").click(function () {
-            $('#ModalSetModelId').modal('show');
-        })
+            //
+            // Button click event handlers
+            //
+            $("#btnRefreshTsi").click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                runTsq(targetDeviceId)
+            })
 
-        $("#btnAddDevicePopup").click(function () {
-            $('#ModalCreateDevice').modal('show');
-        })
+            $("#btnAddDevicePopup").click(function () {
+                $('#ModalCreateDevice').modal('show');
+            })
 
-        $("#btnConnectionStringCopy").click(function () {
-            navigator.clipboard.writeText(connectionString);
-        })
+            $("#btnConnectionStringCopy").click(function () {
+                navigator.clipboard.writeText(connectionString);
+            })
 
-        $("#btnPrimaryKeyCopy").click(function () {
-            console.log("Primary" + deviceKeyPrimary);
-            navigator.clipboard.writeText(deviceKeyPrimary);
-        })
+            $("#btnPrimaryKeyCopy").click(function () {
+                console.log("Primary" + deviceKeyPrimary);
+                navigator.clipboard.writeText(deviceKeyPrimary);
+            })
 
-        $("#btnSecondaryKeyCopy").click(function () {
-            console.log("Secondary" + deviceKeySecondary);
-            navigator.clipboard.writeText(deviceKeySecondary);
-        })
+            $("#btnSecondaryKeyCopy").click(function () {
+                console.log("Secondary" + deviceKeySecondary);
+                navigator.clipboard.writeText(deviceKeySecondary);
+            })
 
-        //
-        // Retrieves Device Twin
-        //
-        $("#btnDeviceTwin").click(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
-            console.log("Get Twin for : " + connectionString);
+            //
+            // Retrieves Device Twin
+            //
+            $("#btnDeviceTwin").click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                console.log("Get Twin for : " + connectionString);
 
-            if (targetDeviceId.length > 0) {
-                $.ajax({
-                type: "GET",
-                    url: '@Url.Action("GetTwin", "IoTHub")',
-                    data: { deviceId: targetDeviceId},
-                    success: function (response) {
-                        document.getElementById('DeviceTwinContent').innerHTML = response;
-                        $('#ModalDeviceTwin').modal('show');
-                    },
-                    error: function(req, status, error) {
-                        alert("Error " + status);
-                    }
-                });
-            };
+                if (targetDeviceId.length > 0) {
+                    $.ajax({
+                    type: "GET",
+                        url: '@Url.Action("GetTwin", "IoTHub")',
+                        data: { deviceId: targetDeviceId},
+                        success: function (response) {
+                            document.getElementById('DeviceTwinContent').innerHTML = response;
+                            $('#ModalDeviceTwin').modal('show');
+                        },
+                        error: function(req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                };
 
-            runTsq(targetDeviceId);
-        })
 
-        //
-        // Gets list of devices from IoT Hub and fill the dropdown list
-        //
-        $('#DeviceList').change(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
-            if (targetDeviceId.length > 0) {
-                console.log("Selected " + targetDeviceId);
-                getDeviceInfo(targetDeviceId);
-            } else {
-                enableDisableButtons(true);
-                clearDeviceInfo();
-            }
-        });
+            })
 
-        //
-        // Sets Model ID to the selected device
-        //
-        $('#btnSetModel').click(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
-            var modelId = $("#newModelId").val();
+            //
+            // Gets list of devices from IoT Hub and fill the dropdown list
+            //
+            $('#DeviceList').change(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                if (targetDeviceId.length > 0) {
+                    console.log("Selected " + targetDeviceId);
+                    getDeviceInfo(targetDeviceId);
+                    runTsq(targetDeviceId);
+                } else {
+                    enableDisableButtons(true);
+                    clearDeviceInfo();
+                }
+            });
 
-            if (connectionString.length > 0 && modelId.length > 0) {
-                console.log("Setting Model ID :" + targetDeviceId + " Model : " + modelId);
+            //
+            // Sets Model ID to the selected device
+            //
+            $('#btnSetModel').click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                var modelId = $("#newModelId").val();
 
-                $.ajax({
+                if (connectionString.length > 0 && modelId.length > 0) {
+                    console.log("Setting Model ID :" + targetDeviceId + " Model : " + modelId);
+
+                    $.ajax({
+                        type: "POST",
+                        url: '@Url.Action("SetModelId", "IoTHub")',
+                        data: { connectionString: connectionString, modelId: modelId },
+                        success: function(response) {
+                            getDeviceInfo(targetDeviceId);
+                        },
+                        error: function(req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                    $('#ModalSetModelId').modal('hide');
+                };
+            });
+
+            //
+            // Adds a new IoT Device to IoT Hub
+            //
+            $('#btnAddDevice').click(function () {
+                var newDevice = $('#newDeviceId').val();
+
+                if (newDevice.length > 0) {
+                    console.log("Add Device " + newDevice);
+                    $.ajax({
+                        type: "POST",
+                        url: '@Url.Action("AddDevice", "IoTHub")',
+                        data: { deviceId: newDevice },
+                        success: function(response) {
+                            var newOption = "<option value='" + newDevice + "'>" + newDevice + "</option>";
+                            $(newOption).insertBefore($("#DeviceList option:last"));
+                            $("#DeviceList").val(newDevice);
+                            getDeviceInfo(newDevice);
+                        },
+                        error: function(req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                    $('#ModalCreateDevice').modal('hide');
+                };
+            });
+
+            //
+            // Deletes an IoT device from IoT Hub
+            //
+            $('#btnDeleteDevice').click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+
+                if (targetDeviceId.length > 0) {
+
+                    console.log("Deleting " + targetDeviceId);
+
+                    $.ajax({
+                        type: "DELETE",
+                        url: '@Url.Action("DeleteDevice", "IoTHub")',
+                        data: { deviceId: targetDeviceId },
+                        success: function (response) {
+                            //alert("Success " + JSON.stringify(response));
+                            $("#DeviceList option:selected").remove();
+                            enableDisableButtons(true);
+                            clearDeviceInfo();
+                        },
+                        error: function (req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                }
+            });
+
+            //
+            // Web Client Simulator
+            //
+            $('#btnConnect').click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                var modelId = $("#tdModelId").text();
+
+                if (targetDeviceId.length > 0 && connectionString.length > 0) {
+                    console.log("Connect Device " + targetDeviceId + " Model : " + modelId);
+                    $.ajax({
                     type: "POST",
-                    url: '@Url.Action("SetModelId", "IoTHub")',
-                    data: { connectionString: connectionString, modelId: modelId },
-                    success: function(response) {
-                        getDeviceInfo(targetDeviceId);
-                    },
-                    error: function(req, status, error) {
-                        alert("Error " + status);
-                    }
-                });
-                $('#ModalSetModelId').modal('hide');
-            };
-        });
+                        url: '@Url.Action("ConnectDevice", "IoTHub")',
+                        data: { connectionString: connectionString, modelId: modelId},
+                        success: function (response) {
+                            //alert(response)
+                            getDeviceInfo(targetDeviceId);
+                        },
+                        error: function(req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                };
+            });
 
-        //
-        // Adds a new IoT Device to IoT Hub
-        //
-        $('#btnAddDevice').click(function () {
-            var newDevice = $('#newDeviceId').val();
 
-            if (newDevice.length > 0) {
-                console.log("Add Device " + newDevice);
-                $.ajax({
+            //
+            // Send a dump telemetry data
+            //
+            $('#btnTelemetry').click(function () {
+                var targetDeviceId = $("#DeviceList option:selected").text();
+                var modelId = $("#tdModelId").text();
+
+                if (targetDeviceId.length > 0) {
+                    console.log("Sending Telemetry from " + targetDeviceId + " Model : " + modelId);
+                    $.ajax({
                     type: "POST",
-                    url: '@Url.Action("AddDevice", "IoTHub")',
-                    data: { deviceId: newDevice },
-                    success: function(response) {
-                        var newOption = "<option value='" + newDevice + "'>" + newDevice + "</option>";
-                        $(newOption).insertBefore($("#DeviceList option:last"));
-                        $("#DeviceList").val(newDevice);
-                        getDeviceInfo(newDevice);
-                    },
-                    error: function(req, status, error) {
-                        alert("Error " + status);
-                    }
-                });
-                $('#ModalCreateDevice').modal('hide');
-            };
-        });
+                        url: '@Url.Action("SendTelemetry", "IoTHub")',
+                        data: { connectionString: connectionString, modelId: modelId},
+                        success: function (response) {
+                            //alert(response)
+                            getDeviceInfo(targetDeviceId);
+                        },
+                        error: function(req, status, error) {
+                            alert("Error " + status);
+                        }
+                    });
+                };
+            });
 
-        //
-        // Deletes an IoT device from IoT Hub
-        //
-        $('#btnDeleteDevice').click(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
 
-            if (targetDeviceId.length > 0) {
-
-                console.log("Deleting " + targetDeviceId);
+            //
+            // Gets device information.  Connection String, Model ID, Primary/Secondary Keys, and connect/disconnect status
+            //
+            var getDeviceInfo = function (deviceId) {
 
                 $.ajax({
-                    type: "DELETE",
-                    url: '@Url.Action("DeleteDevice", "IoTHub")',
-                    data: { deviceId: targetDeviceId },
+                    type: "GET",
+                    url: '@Url.Action("GetDevice", "IoTHub")',
+                    data: { deviceId: deviceId },
                     success: function (response) {
-                        //alert("Success " + JSON.stringify(response));
-                        $("#DeviceList option:selected").remove();
-                        enableDisableButtons(true);
-                        clearDeviceInfo();
+                        document.getElementById('tdConnectionStatus').innerHTML = response.connectionState;
+                        if (response.connectionState == "Connected") {
+                            btnConnect.innerHTML = '<i class="fa fa-unlink" style="width: 1.5em"></i>Disconnect'
+                        } else {
+                            btnConnect.innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect'
+                        }
+                        document.getElementById('tdState').innerHTML = response.status;
+                        deviceKeyPrimary = response.primaryKey;
+                        deviceKeySecondary = response.secondaryKey;
+                        connectionString = "HostName=" + '@ViewData["IoTHubName"]' + ";DeviceId=" + response.deviceId + ";SharedAccessKey=" + response.primaryKey;
+                        document.getElementById('tdModelId').innerHTML = response.modelId;
+                        deviceTwinString = response;
+                        enableDisableButtons(false);
+                        return true;
                     },
                     error: function (req, status, error) {
                         alert("Error " + status);
+                        return false;
                     }
                 });
             }
-        });
 
-        //
-        // Web Client Simulator
-        //
-        $('#btnConnect').click(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
-            var modelId = $("#tdModelId").text();
+            //
+            // Clears UI components when a device is de-selected
+            //
+            var clearDeviceInfo = function () {
+                document.getElementById('tdConnectionStatus').innerHTML = "&nbsp;"
+                document.getElementById("btnConnect").innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect'
+                document.getElementById('tdState').innerHTML = "&nbsp;"
+                document.getElementById('tdModelId').innerHTML = "&nbsp;"
+                deviceKeyPrimary = ""
+                deviceKeySecondary = ""
+                connectionString = "";
+            }
 
-            if (targetDeviceId.length > 0 && connectionString.length > 0) {
-                console.log("Connect Device " + targetDeviceId + " Model : " + modelId);
-                $.ajax({
-                type: "POST",
-                    url: '@Url.Action("ConnectDevice", "IoTHub")',
-                    data: { connectionString: connectionString, modelId: modelId},
-                    success: function (response) {
-                        //alert(response)
-                        getDeviceInfo(targetDeviceId);
-                    },
-                    error: function(req, status, error) {
-                        alert("Error " + status);
-                    }
-                });
-            };
-        });
+            //
+            // Enable/disable buttons
+            //
+            var enableDisableButtons = function (disableButton) {
 
+                document.getElementById("btnDeleteDevice").disabled = disableButton;
 
-        //
-        // Send a dump telemetry data
-        //
-        $('#btnTelemetry').click(function () {
-            var targetDeviceId = $("#DeviceList option:selected").text();
-            var modelId = $("#tdModelId").text();
-
-            if (targetDeviceId.length > 0) {
-                console.log("Sending Telemetry from " + targetDeviceId + " Model : " + modelId);
-                $.ajax({
-                type: "POST",
-                    url: '@Url.Action("SendTelemetry", "IoTHub")',
-                    data: { connectionString: connectionString, modelId: modelId},
-                    success: function (response) {
-                        //alert(response)
-                        getDeviceInfo(targetDeviceId);
-                    },
-                    error: function(req, status, error) {
-                        alert("Error " + status);
-                    }
-                });
-            };
-        });
-
-
-        //
-        // Gets device information.  Connection String, Model ID, Primary/Secondary Keys, and connect/disconnect status
-        //
-        var getDeviceInfo = function (deviceId) {
-
-            $.ajax({
-                type: "GET",
-                url: '@Url.Action("GetDevice", "IoTHub")',
-                data: { deviceId: deviceId },
-                success: function (response) {
-                    document.getElementById('tdConnectionStatus').innerHTML = response.connectionState;
-                    if (response.connectionState == "Connected") {
-                        btnConnect.innerHTML = '<i class="fa fa-unlink" style="width: 1.5em"></i>Disconnect'
-                    } else {
-                        btnConnect.innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect'
-                    }
-                    document.getElementById('tdState').innerHTML = response.status;
-                    deviceKeyPrimary = response.primaryKey;
-                    deviceKeySecondary = response.secondaryKey;
-                    connectionString = "HostName=" + '@ViewData["IoTHubName"]' + ";DeviceId=" + response.deviceId + ";SharedAccessKey=" + response.primaryKey;
-                    document.getElementById('tdModelId').innerHTML = response.modelId;
-                    deviceTwinString = response;
-                    enableDisableButtons(false);
-                    return true;
-                },
-                error: function (req, status, error) {
-                    alert("Error " + status);
-                    return false;
+                if (disableButton == false && connectionString.length > 0) {
+                    document.getElementById("btnConnectionStringCopy").disabled = disableButton;
+                    document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
+                    document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
+                    document.getElementById("btnConnect").disabled = disableButton;
+                    document.getElementById("btnTelemetry").disabled = disableButton;
+                } else {
+                    document.getElementById("btnConnectionStringCopy").disabled = disableButton;
+                    document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
+                    document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
+                    document.getElementById("btnConnect").disabled = disableButton;
+                    document.getElementById("btnTelemetry").disabled = disableButton;
                 }
-            });
-        }
-
-        //
-        // Clears UI components when a device is de-selected
-        //
-        var clearDeviceInfo = function () {
-            document.getElementById('tdConnectionStatus').innerHTML = "&nbsp;"
-            btnConnect.innerHTML = '<i class="fa fa-link" style="width: 1.5em"></i>Connect'
-            document.getElementById('tdState').innerHTML = "&nbsp;"
-            document.getElementById('tdPrimaryKey').innerHTML = "&nbsp;"
-            document.getElementById('tdSecondaryKey').innerHTML = "&nbsp;"
-            document.getElementById('tdModelId').innerHTML = "&nbsp;"
-            connectionString = "";
-            document.getElementById('tdConnectionString').innerHTML = "&nbsp;";
-            document.getElementById('tdModelId').innerHTML = "&nbsp;"
-        }
-
-        //
-        // Enable/disable buttons
-        //
-        var enableDisableButtons = function (disableButton) {
-
-            document.getElementById("btnDeleteDevice").disabled = disableButton;
-
-            if (disableButton == false && connectionString.length > 0) {
-                document.getElementById("btnConnectionStringCopy").disabled = disableButton;
-                document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
-                document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
-                document.getElementById("btnConnect").disabled = disableButton;
-                document.getElementById("btnTelemetry").disabled = disableButton;
-            } else {
-                document.getElementById("btnConnectionStringCopy").disabled = disableButton;
-                document.getElementById("btnPrimaryKeyCopy").disabled = disableButton;
-                document.getElementById("btnSecondaryKeyCopy").disabled = disableButton;
-                document.getElementById("btnConnect").disabled = disableButton;
-                document.getElementById("btnTelemetry").disabled = disableButton;
+                document.getElementById("btnSetModelPopup").disabled = disableButton;
+                document.getElementById("btnDeviceTwin").disabled = disableButton;
             }
-            document.getElementById("btnSetModelPopup").disabled = disableButton;
-            document.getElementById("btnDeviceTwin").disabled = disableButton;
-        }
 
-        //
-        // Clears device events (messages and events)
-        //
-        var clearEventData = function () {
-            $("#device-events").find("tr:gt(0)").remove();
-            $("#device-events").hide();
-        }
+            //
+            // Clears device events (messages and events)
+            //
+            var clearEventData = function () {
+                $("#device-events").find("tr:gt(0)").remove();
+                $("#device-events").hide();
+            }
 
-        //
-        // Adds device events to the table
-        //
-        var addEvent = function (id, type, deviceId, modelId, source, time, data) {
-            var dataObj = JSON.parse(data);
-            var context = {
-                eventTime: time,
-                eventDeviceId: deviceId,
-                eventModelId: modelId,
-                eventType: type,
-                eventSource: source,
-                eventId: id,
-                eventData: JSON.stringify(dataObj, undefined, 2)
-            };
-            var source = document.getElementById('event-template').innerHTML;
-            var template = Handlebars.compile(source);
-            var html = template(context);
+            //
+            // Adds device events to the table
+            //
+            var addEvent = function (id, type, deviceId, modelId, source, time, data) {
+                var dataObj = JSON.parse(data);
+                var context = {
+                    eventTime: time,
+                    eventDeviceId: deviceId,
+                    eventModelId: modelId,
+                    eventType: type,
+                    eventSource: source,
+                    eventId: id,
+                    eventData: JSON.stringify(dataObj, undefined, 2)
+                };
+                var source = document.getElementById('event-template').innerHTML;
+                var template = Handlebars.compile(source);
+                var html = template(context);
 
-            $("#device-events").show();
-            $('#device-event-details').prepend(html);
-        }
+                $("#device-events").show();
+                $('#device-event-details').prepend(html);
+            }
 
-        var runTsq = function (deviceId) {
-
-            console.log("runTsq " + deviceId);
-            // create aggregate expressions, they are S1/S2 SKU query objects
-            var linechartTsqExpressions = [];
-
-            //Set a date range for the past 24 hours.
-            var endDate = new Date();
-            var startDate = new Date(endDate.valueOf() - 1000 * 60 * 60 * 140);
-
-            linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
-                { timeSeriesId: [deviceId] }, // instance json
-                {
-                    AvgTemp: {
-                        kind: 'numeric',
-                        value: { tsx: '$event.temperature_hts221' },
-                        filter: null,
-                        aggregation: { tsx: 'avg($value)' }
-                    }
-                }, // variable json
-                { from: startDate, to: endDate, bucketSize: '1M' }, // search span
-                '#60B9AE',
-                'AvgTemp'));
-
-            linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
-                { timeSeriesId: [deviceId] }, // instance json
-                {
-                    AvgHumidity: {
-                        kind: 'numeric',
-                        value: { tsx: '$event.humidity' },
-                        filter: null,
-                        aggregation: { tsx: 'avg($value)' }
-                    }
-                }, // variable json
-                { from: startDate, to: endDate, bucketSize: '1M' }, // search span
-                'yellow',
-                'AvgHumidity'));
-
-            authContext.getTsiToken().then(function (token) {
-                tsiClient.server.getTsqResults(token, `@ViewData["tsiUri"]`, linechartTsqExpressions.map(function (ae) { return ae.toTsq() })).then(function (result) {
-
-                    var transformedResult = tsiClient.ux.transformTsqResultsForVisualization(result, linechartTsqExpressions);
-                    var temps = transformedResult[0].AvgTemp[''];
-                    var humidity = transformedResult[1].AvgHumidity[''];
-                    var timestamps = Object.keys(humidity);
-
-                    //Create mock positions for each timestamp since this device doesn't have position information.
-                    for (var i = 0; i < timestamps.length; i++) {
-                        var timestamp = timestamps[i];
-                        t = temps[timestamp].AvgTemp;
-                        h = humidity[timestamp].AvgHumidity;
-
-                        //If there is a temperature and humidity value, add a data point to the map.
-                        if (t !== null && h !== null) {
-                            var timestamp = timestamps[i];
+            var getTsiToken = function () {
+                console.log("Getting TSI Token");
+                document.getElementById('tsiNoSP').style.display = 'none';
+                $.ajax({
+                    type: "GET",
+                    url: '@Url.Action("GetTsiToken", "Tsi")',
+                    success: function (response) {
+                        tsiToken = response.toString();
+                        // console.log("GetTsiToken : " + tsiToken);
+                        if (tsiToken.length == 0) {
+                            document.getElementById('tsiNoSpMsg').textContent = "Please configure Time Series Insights";
+                            document.getElementById('tsiNoSP').style.display = "block";
+                            document.getElementById('tsiChart').style.display = "none";
+                        } else {
+                            document.getElementById('tsiChart').style.display = "block";
                         }
+                    },
+                    error: function(req, status, error) {
+                        alert("GetTsiToken Error " + status);
+                        tsiToken = "";
+                        document.getElementById('tsiNoSpMsg').textContent = "Please configure Time Series Insights";
+                        document.getElementById('tsiNoSP').style.display = "block";
                     }
-
-                    //Create the line chart.
-                    var lineChart = new tsiClient.ux.LineChart(document.getElementById('tsiChart'));
-                    lineChart.render(transformedResult, {
-                        theme: 'dark', grid: true, tooltip: true, legend: 'compact',
-                    }, linechartTsqExpressions);
                 });
-            });
-        };
+            }
 
-        //
-        // Initialization on page load
-        //
-        var initialize = function () {
+            var runTsq = function (deviceId) {
 
-            // Initialize Authentication for TSI
-            initAuth(tsiClientId, tsiTenantId);
+                console.log("runTsq " + deviceId);
+                // create aggregate expressions, they are S1/S2 SKU query objects
+                var linechartTsqExpressions = [];
 
-            tsiClient = new TsiClient();
+                //Set a date range for the past 24 hours.
+                var endDate = new Date();
+                var startDate = new Date(endDate.valueOf() - 1000 * 60 * 5);
 
-            authContext.getTsiToken();
-            //runTsq();
+                linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
+                    { timeSeriesId: [deviceId] }, // instance json
+                    {
+                        AvgTemp: {
+                            kind: 'numeric',
+                            value: { tsx: '$event.temperature_hts221' },
+                            filter: null,
+                            aggregation: { tsx: 'avg($value)' }
+                        }
+                    }, // variable json
+                    { from: startDate, to: endDate, bucketSize: '1M' }, // search span
+                    '#60B9AE',
+                    'AvgTemp'));
 
-            // Initialize Azure Map
-            var map = new atlas.Map('map-id', {
-                center: [-122.1385, 47.6449093],
-                zoom: 16,
-                language: 'en-US',
-                showLogo: false,
-                renderWorldCopies: true,
-                view:"Auto",
-                showBuildingModels: true,
-                showFeedbackLink :false,
-                style: "satellite_road_labels",
-                authOptions: {
-                    authType: 'subscriptionKey',
-                    subscriptionKey: `@ViewData["mapKey"]`
+                linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
+                    { timeSeriesId: [deviceId] }, // instance json
+                    {
+                        AvgHumidity: {
+                            kind: 'numeric',
+                            value: { tsx: '$event.humidity' },
+                            filter: null,
+                            aggregation: { tsx: 'avg($value)' }
+                        }
+                    }, // variable json
+                    { from: startDate, to: endDate, bucketSize: '1M' }, // search span
+                    'yellow',
+                    'AvgHumidity'));
+
+                getTsiToken();
+
+                if (tsiToken.length > 0) {
+
+                    tsiClient.server.getTsqResults(tsiToken, `@ViewData["tsiUri"]`, linechartTsqExpressions.map(function (ae) { return ae.toTsq() })).then(function (result) {
+
+                        var transformedResult = tsiClient.ux.transformTsqResultsForVisualization(result, linechartTsqExpressions);
+                        var temps = transformedResult[0].AvgTemp[''];
+                        var humidity = transformedResult[1].AvgHumidity[''];
+                        var timestamps = Object.keys(humidity);
+
+                        //Create mock positions for each timestamp since this device doesn't have position information.
+                        for (var i = 0; i < timestamps.length; i++) {
+                            var timestamp = timestamps[i];
+                            t = temps[timestamp].AvgTemp;
+                            h = humidity[timestamp].AvgHumidity;
+
+                            //If there is a temperature and humidity value, add a data point to the map.
+                            if (t !== null && h !== null) {
+                                var timestamp = timestamps[i];
+                            }
+                        }
+
+                        //Create the line chart.
+                        if (lineChart == null) {
+                            lineChart = new tsiClient.ux.LineChart(document.getElementById('tsiLineChart'));
+                        }
+
+                        lineChart.render(transformedResult, {
+                            theme: 'dark', grid: true, tooltip: true, legend: 'compact',
+                        }, linechartTsqExpressions);
+                    });
                 }
-            });
 
-            map.controls.add([
-                new atlas.control.ZoomControl(),
-                new atlas.control.CompassControl(),
-                new atlas.control.PitchControl(),
-                new atlas.control.StyleControl()
-            ], {
-                position: "top-left"
-            });
+            };
 
-            var clearEvents = document.getElementById('clear-events');
-                clearEvents.addEventListener('click', function () {
-                    clearEventData();
-            });
+            //
+            // Initialization on page load
+            //
+            var initialize = function () {
 
-            // SignalR
-            hubConnection = new signalR.HubConnectionBuilder()
-                .withUrl("telemetryhub")
-                .configureLogging(signalR.LogLevel.Information)
-                .build();
+                // Initialize Authentication for TSI
+                getTsiToken();
 
-            hubConnection.start().catch(err => console.error(err.toString()));
+                tsiClient = new TsiClient();
 
-            hubConnection.on('DeviceTelemetry', function (payload) {
-                var jsonData = JSON.parse(payload);
-                addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
-            });
+                // Initialize Azure Map
+                var map = new atlas.Map('map-id', {
+                    center: [-122.1385, 47.6449093],
+                    zoom: 16,
+                    language: 'en-US',
+                    showLogo: false,
+                    renderWorldCopies: true,
+                    view:"Auto",
+                    showBuildingModels: true,
+                    showFeedbackLink :false,
+                    style: "satellite_road_labels",
+                    authOptions: {
+                        authType: 'subscriptionKey',
+                        subscriptionKey: `@ViewData["mapKey"]`
+                    }
+                });
 
-            hubConnection.on('DeviceTwinChange', function (payload) {
-                var jsonData = JSON.parse(payload)
-                addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
-            });
+                map.controls.add([
+                    new atlas.control.ZoomControl(),
+                    new atlas.control.CompassControl(),
+                    new atlas.control.PitchControl(),
+                    new atlas.control.StyleControl()
+                ], {
+                    position: "top-left"
+                });
 
-            hubConnection.on('DigitalTwinChange', function (payload) {
-                var jsonData = JSON.parse(payload)
-                addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
-            });
+                var clearEvents = document.getElementById('clear-events');
+                    clearEvents.addEventListener('click', function () {
+                        clearEventData();
+                });
 
-            hubConnection.on('DeviceLifecycle', function (payload) {
-                var jsonData = JSON.parse(payload)
-                addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
-                console.log("DeviceLifecycle " + jsonData.eventSource);
-                if (jsonData.eventSource == 'Microsoft.Devices.DeviceCreated') {
-                    Console.log("Device Added");
-                    var newOption = "<option value='" + jsonData.deviceId + "'>" + jsonData.deviceId + "</option>";
-                    $(newOption).insertBefore($("#DeviceList option:last"));
-                    $("#DeviceList").val(jsonData.deviceId);
-                }
-                else if (jsonData.eventSource == 'Microsoft.Devices.DeviceDeleted')
-                {
-                    Console.log("Device Removed");
-                }
-            });
+                // SignalR
+                hubConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("telemetryhub")
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
 
-            hubConnection.on('EventGrid', function (payload) {
-                var jsonData = JSON.parse(payload)
-                addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
-                console.log("Event Grid " + jsonData.eventSource);
-                if (jsonData.eventSource == 'Microsoft.Devices.DeviceCreated') {
-                    console.log("Device Added");
-                    var newOption = "<option value='" + jsonData.deviceId + "'>" + jsonData.deviceId + "</option>";
-                    $(newOption).insertBefore($("#DeviceList option:last"));
-                    $("#DeviceList").val(jsonData.deviceId);
-                }
-                else if (jsonData.eventSource == 'Microsoft.Devices.DeviceDeleted') {
-                    console.log("Device Removed");
-                }
-            });
+                hubConnection.start().catch(err => console.error(err.toString()));
+
+                hubConnection.on('DeviceTelemetry', function (payload) {
+                    var jsonData = JSON.parse(payload);
+                    addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                });
+
+                hubConnection.on('DeviceTwinChange', function (payload) {
+                    var jsonData = JSON.parse(payload)
+                    addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                });
+
+                hubConnection.on('DigitalTwinChange', function (payload) {
+                    var jsonData = JSON.parse(payload)
+                    addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                });
+
+                hubConnection.on('DeviceLifecycle', function (payload) {
+                    var jsonData = JSON.parse(payload)
+                    addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    console.log("DeviceLifecycle " + jsonData.eventSource);
+                    if (jsonData.eventSource == 'Microsoft.Devices.DeviceCreated') {
+                        Console.log("Device Added");
+                        var newOption = "<option value='" + jsonData.deviceId + "'>" + jsonData.deviceId + "</option>";
+                        $(newOption).insertBefore($("#DeviceList option:last"));
+                        $("#DeviceList").val(jsonData.deviceId);
+                    }
+                    else if (jsonData.eventSource == 'Microsoft.Devices.DeviceDeleted')
+                    {
+                        Console.log("Device Removed");
+                    }
+                });
+
+                hubConnection.on('EventGrid', function (payload) {
+                    var jsonData = JSON.parse(payload)
+                    addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
+                    console.log("Event Grid " + jsonData.eventSource);
+                    if (jsonData.eventSource == 'Microsoft.Devices.DeviceCreated') {
+                        console.log("Device Added");
+                        var newOption = "<option value='" + jsonData.deviceId + "'>" + jsonData.deviceId + "</option>";
+                        $(newOption).insertBefore($("#DeviceList option:last"));
+                        $("#DeviceList").val(jsonData.deviceId);
+                    }
+                    else if (jsonData.eventSource == 'Microsoft.Devices.DeviceDeleted') {
+                        console.log("Device Removed");
+                    }
+                });
 
 
 
 
-            enableDisableButtons(true);
-        };
+                enableDisableButtons(true);
+            };
         </script>
     }
