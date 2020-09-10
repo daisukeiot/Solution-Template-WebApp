@@ -315,6 +315,9 @@
 
             var hubConnection;
 
+            var temperatureTsx = '$event.' + '@ViewData["temperature"]';
+            var humidityTsx = '$event.' + '@ViewData["humidity"]';
+
             var connectionString = "";
             var deviceKeyPrimary = "";
             var deviceKeySecondary = "";
@@ -663,33 +666,36 @@
                 var endDate = new Date();
                 var startDate = new Date(endDate.valueOf() - 1000 * 60 * 5);
 
-                linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
-                    { timeSeriesId: [deviceId] }, // instance json
-                    {
-                        AvgTemp: {
-                            kind: 'numeric',
-                            value: { tsx: '$event.temperature_hts221' },
-                            filter: null,
-                            aggregation: { tsx: 'avg($value)' }
-                        }
-                    }, // variable json
-                    { from: startDate, to: endDate, bucketSize: '1M' }, // search span
-                    '#60B9AE',
-                    'AvgTemp'));
+                //https://github.com/microsoft/tsiclient/blob/b19d9f0078c8ed3104b9d664f05551664a5ae602/docs/UX.md#chart-options
 
                 linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
                     { timeSeriesId: [deviceId] }, // instance json
                     {
-                        AvgHumidity: {
+                        Average_Temperature: {
                             kind: 'numeric',
-                            value: { tsx: '$event.humidity' },
+                            value: { tsx: temperatureTsx },
                             filter: null,
                             aggregation: { tsx: 'avg($value)' }
                         }
-                    }, // variable json
-                    { from: startDate, to: endDate, bucketSize: '1M' }, // search span
-                    'yellow',
-                    'AvgHumidity'));
+                    },
+                    { from: startDate, to: endDate, bucketSize: '10S' }, // search span
+                    { color: 'Red', alias: 'Average_Temperature', includeDots: true, includeEnvelope: true }
+                ));
+
+
+                linechartTsqExpressions.push(new tsiClient.ux.TsqExpression(
+                    { timeSeriesId: [deviceId] }, // instance json
+                    {
+                        Average_Humidity: {
+                            kind: 'numeric',
+                            value: { tsx: humidityTsx },
+                            filter: null,
+                            aggregation: { tsx: 'avg($value)' }
+                        }
+                    },
+                    { from: startDate, to: endDate, bucketSize: '10S' }, // search span
+                    { color: 'yellow', alias: 'Average_Humidity', includeDots: true}
+                ));
 
                 getTsiToken();
 
@@ -698,15 +704,15 @@
                     tsiClient.server.getTsqResults(tsiToken, `@ViewData["tsiUri"]`, linechartTsqExpressions.map(function (ae) { return ae.toTsq() })).then(function (result) {
 
                         var transformedResult = tsiClient.ux.transformTsqResultsForVisualization(result, linechartTsqExpressions);
-                        var temps = transformedResult[0].AvgTemp[''];
-                        var humidity = transformedResult[1].AvgHumidity[''];
+                        var temps = transformedResult[0].Average_Temperature[''];
+                        var humidity = transformedResult[1].Average_Humidity[''];
                         var timestamps = Object.keys(humidity);
 
                         //Create mock positions for each timestamp since this device doesn't have position information.
                         for (var i = 0; i < timestamps.length; i++) {
                             var timestamp = timestamps[i];
-                            t = temps[timestamp].AvgTemp;
-                            h = humidity[timestamp].AvgHumidity;
+                            t = temps[timestamp].Average_Temperature;
+                            h = humidity[timestamp].Average_Humidity;
 
                             //If there is a temperature and humidity value, add a data point to the map.
                             if (t !== null && h !== null) {
@@ -720,7 +726,7 @@
                         }
 
                         lineChart.render(transformedResult, {
-                            theme: 'dark', grid: true, tooltip: true, legend: 'compact',
+                            theme: 'dark', grid: true, tooltip: true, legend: 'compact', offset: 'Local',
                         }, linechartTsqExpressions);
                     });
                 }

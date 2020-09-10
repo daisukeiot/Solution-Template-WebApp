@@ -38,6 +38,8 @@ namespace Portal.Controllers
             ViewData["TsiTenantId"] = _appSettings.TimeSeriesInsights.tenantId.ToString();
             ViewData["TsiUri"] = _appSettings.TimeSeriesInsights.tsiUri.ToString();
             ViewData["TsiSecret"] = _appSettings.TimeSeriesInsights.tsiSecret.ToString();
+            ViewData["temperature"] = _appSettings.TimeSeriesInsights.temperatureName.ToString();
+            ViewData["humidity"] = _appSettings.TimeSeriesInsights.humidityName.ToString();
             return View(homeView);
         }
 

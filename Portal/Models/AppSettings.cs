@@ -27,6 +27,9 @@ namespace Portal.Models
         public string tsiUri { get; set; }
         public string tsiSecret { get; set; }
 
+        // to do : Convert to IoT Plug and Play
+        public string temperatureName { get; set; }
+        public string humidityName { get; set; }
     };
 
     public class AppSettings
