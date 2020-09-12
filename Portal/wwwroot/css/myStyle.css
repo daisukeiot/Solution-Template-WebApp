@@ -2,11 +2,11 @@
     margin: 0;
     padding: 0;
     line-height: 1.5;
-    background-color: rgb(242, 242,242);
+    background-color: rgb(255, 255, 255);
     text-align: left;
-    font-size: 1.61vw;
+    font-size: 1.5rem;
     border-radius: 5%;
-    color: rgb(80,80,80);
+    color: rgb(40, 40, 40);
 }
 
 div#pagebody {
@@ -32,7 +32,8 @@ Header
     padding: 8px;
     border-bottom: 1px solid #888;
     width: 100%;
-    color: white;
+    font-size:1.3em;
+    color:rgb(240,240,240);
 } 
 
 /*.header, div#main_contents {
@@ -41,41 +42,40 @@ Header
 
 .header {
     text-align: center;
-    color: white;
-    background-color: rgb(0, 120, 212);
     display: flex;
     height: auto; 10vh
 
 }
 
 div#main_contents {
-    /*    background-color:red;*/
-    color :rgb(80,80,80) ;
     margin: 0px 0px 0px 0px;
-    font-size: 0.5em;
 }
 
 
 fieldset {
     border-width: 2px;
+    color: rgb(40, 40, 40);
     border-color: silver;
     border-style: groove;
     padding: 3px 5px;
-    background-color: rgb(242, 242,242);
     margin-bottom: 5px;
 }
 
 legend, legend.inner {
+    color: rgb(40, 40, 40);
+    font-size: 1.2em;
     width: auto;
     border-bottom: none;
     padding: 0 5px 0 5px;
     margin-bottom: 0px;
-    background-color: rgb(242, 242,242);
 }
 
 legend{
-    font-size: 1em;
     background-color:transparent;
+}
+
+legend.inner {
+    font-size:1.1em;
 }
 
 div.innerField {
@@ -96,13 +96,21 @@ select#DeviceList, input#newDeviceId, input#newModelId {
     margin:0;
 }
 
-input#newDeviceId, input#newModelId {
-    font-size: 1em;
-    margin-bottom: 10px;
+div.modal-dialog {
+    font-size: 1.2em;
 }
 
-div#NewDeviceModal {
-    color : black;
+div.model-body {
+    text-align: left;
+}
+
+div.model-footer {
+    text-align: right;
+}
+
+input#newDeviceId, input#newModelId {
+    margin-bottom: 10px;
+    font-size: 1.2em;
 }
 
 button {
@@ -110,13 +118,12 @@ button {
     border:0;
     background-color:transparent;
     color: rgb(80,80,80);
-    hei
 }
 
 button:hover {
-    color: rgb(0, 120, 212);
+
     text-decoration: none;
-    background-color: rgb(220, 250, 255);
+    background-color: rgb(220, 220, 220);
 }
 
 button:focus {
@@ -127,10 +134,7 @@ button:disabled:hover,
 button:disabled:focus,
 button:disabled:hover,
 button:disabled {
-    color: rgb(210, 210, 210);
-/*    border-color: #a0a0a0;
-    background-color: #a0a0a0;
-*/    cursor: not-allowed;
+    color: rgb(220, 220, 220);
     pointer-events: none;
 }
 
@@ -141,7 +145,6 @@ td, table {
 }
 
 table {
-/*    border-color: green;*/
     border-spacing:2px;
 }
 
@@ -153,7 +156,6 @@ i {
     display: table;
     width: auto;
     text-align:left;
-    font-size:90%;
     margin:0;
     padding:0px;
     height:auto;
@@ -163,9 +165,6 @@ i {
     display: table-cell;
     width: auto;
     height: 2.1em;
-/*    border: solid;
-    border-width: 1px;
-    border-color: red;*/
 }
 
 .row {
@@ -176,7 +175,6 @@ i {
     display: table;
     width: auto;
     text-align: left;
-    font-size: 90%;
     margin: 0;
     padding: 0px;
 }
@@ -184,7 +182,6 @@ i {
 .loginLogout {
     /*position: absolute;*/
     top: 6px;
-    font-size: 13px;
     right: 0;
 }
 
