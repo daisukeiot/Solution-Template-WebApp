@@ -785,6 +785,10 @@
 
                 hubConnection.start().catch(err => console.error(err.toString()));
 
+                hubConnection.on('SignalRTest', function (payload) {
+                    alert("SignalR Test : " + JSON.stringify(payload));
+                });
+
                 hubConnection.on('DeviceTelemetry', function (payload) {
                     var jsonData = JSON.parse(payload);
                     addEvent(jsonData.eventId, jsonData.eventType, jsonData.deviceId, jsonData.dtDataSchema, jsonData.eventSource, jsonData.eventTime, jsonData.data);
@@ -830,9 +834,6 @@
                         console.log("Device Removed");
                     }
                 });
-
-
-
 
                 enableDisableButtons(true);
             };
